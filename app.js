@@ -21,30 +21,50 @@ const PLAYER_COLORS = [
 
 const VOICE_VARIANTS = [
   "Bas sale merde de {player} ! Tu vas devoir {action} !",
-  "C'est toi {player} ! Espèce de raté, tu vas devoir {action} !",
+  "C'est toi {player} ! Espèce de raté fini, tu vas devoir {action} !",
   "{player} t'as pas eu de bol mon pote ! Tu vas devoir {action} !",
   "HAHAHA ! {player} tu te croyais tranquille ? Raté ! Tu vas devoir {action} !",
   "Aïe aïe aïe {player}... Le destin t'a choisi pour {action} !",
   "{player} c'est toi le bouffon ce soir ! Mission : {action} !",
-  "Non mais regardez qui c'est ! {player} le pauvre ! Tu vas devoir {action} !",
+  "Non mais regardez qui c'est ! {player} le pauvre con ! Tu vas devoir {action} !",
   "Bim ! {player} dans la gueule ! Ton gage : {action} !",
-  "LE DESTIN A PARLÉ ! {player} tu vas devoir {action} ! Pas de pitié !",
-  "{player} tu croyais t'en sortir ? Même pas en rêve ! {action} rien que pour toi !",
-  "Oh le boulard pour {player} ! T'as plus qu'à faire {action} !",
-  "Incroyable mais vrai ! C'est {player} le grand perdant du soir ! Tu dois {action} !",
-  "Le sort en est jeté {player}... tu vas devoir {action}. Bon courage !",
-  "LOOOOSER ! {player} ! Tu vas {action} et tu vas le faire avec le sourire !",
-  "C'est avec une immense joie que je vous annonce que {player} va devoir {action} !",
-  "{player}... mon ami... tu vas souffrir. Tu vas devoir {action}. Désolé pas désolé.",
-  "Le doigt du destin a choisi {player} ! Mission impossible : {action} !",
-  "Oh non oh non oh non... {player} ! Tu dois {action}. Pourquoi toi ? Parce que.",
-  "Petite dédicace à {player} qui va devoir {action} ! Courage à toi, pauvre soul !",
-  "Et c'est {player} qui écope du gage ! {action} ! Allez, on y croit... ou pas !",
-  "Ha ! {player} t'aurais mieux fait de rester chez toi ce soir. {action}. Bonne chance !",
-  "{player} {player} {player}... Le karma a tout vu. Tu dois {action}. Mérite ton sort.",
-  "Une pensée émue pour {player} qui va devoir {action}. Les autres vous remercient.",
-  "Ambiance... {player} ton heure est venue ! {action} immédiatement !",
-  "Statistiquement parlant {player}, t'avais autant de chances que les autres. Et pourtant. {action}.",
+  "LE DESTIN A PARLÉ ! {player} tu vas devoir {action} ! Pas de pitié, zéro !",
+  "{player} tu croyais t'en sortir ? Même pas en rêve sale nul ! {action} rien que pour toi !",
+  "Oh le boulard pour {player} ! T'as plus qu'à faire {action}, pauvre cloche !",
+  "Incroyable mais vrai ! C'est {player} le grand perdant du soir ! Tu dois {action} maintenant !",
+  "Le sort en est jeté {player}... tu vas devoir {action}. Et t'as intérêt !",
+  "LOOOOSER ! {player} ! Tu vas {action} et tu vas le faire avec le sourire, gros nul !",
+  "C'est avec une immense joie que je vous annonce que {player} va devoir {action} ! Quelle honte !",
+  "{player}... mon ami... tu vas souffrir. Tu vas devoir {action}. Désolé pas désolé du tout.",
+  "Le doigt du destin a choisi {player} ! Mission : {action} ! T'as aucune chance d'y échapper.",
+  "Oh non oh non oh non... {player} ! Tu dois {action}. Pourquoi toi ? Parce que t'es nul voilà !",
+  "Petite dédicace à {player} qui va devoir {action} ! Courage à toi, âme damnée !",
+  "Et c'est {player} qui écope du gage ! {action} ! Allez on y croit... non on y croit pas du tout !",
+  "{player} t'aurais mieux fait de rester chez toi ce soir. {action}. Bonne chance sale perdant !",
+  "{player} {player} {player}... Le karma a tout vu et t'a pas raté. Tu dois {action}. Bien fait !",
+  "Une pensée émue pour {player} qui va devoir {action}. Les autres vous remercient du fond du cœur.",
+  "Ambiance... {player} ton heure est venue ! {action} immédiatement et sans rechigner !",
+  "Statistiquement {player}, t'avais autant de chances que les autres. Et pourtant. {action}. Énorme.",
+  "Oh putain mais c'est {player} ! J'y crois pas ! T'es vraiment le plus nul ! Tu dois {action} !",
+  "HONTE ! HONTE ! HONTE ! {player} tu vas devoir {action} devant tout le monde comme le bouffon que t'es !",
+  "Verdict du tribunal des amis : {player} est coupable d'être nul. Peine : {action}. Sans appel.",
+  "{player} sors ton plus beau sourire parce que tu vas devoir {action} ! Et on va tous regarder !",
+  "Dis-moi {player}, t'avais prévu quoi ce soir ? Parce que maintenant t'as {action} au programme !",
+  "Franchement {player} même ton chien aurait honte de toi là. {action}. Allez !",
+  "C'est bon {player} arrête de pleurer, tu dois {action}. Les larmes ça change rien ici !",
+  "Trois, deux, un... et c'est {player} qui se prend {action} dans la face ! Magnifique !",
+  "{player} tu viens de perdre le pari de ta vie. Ton gage : {action}. T'es vraiment pas chanceux !",
+  "Toute la honte sur {player} ! Toute la honte ! {action} et vite fait bien fait !",
+  "Le roi des loosers de la soirée s'appelle {player} ! Applaudissements ! Et maintenant : {action} !",
+  "On a un gagnant... enfin un perdant ! {player} ! La totale ! Tu dois {action} ! C'est cadeau !",
+  "{player} je vais être honnête avec toi, on s'y attendait tous un peu. {action}. Allez hop !",
+  "Personne n'est surpris. Vraiment personne. {player} tu dois {action} et c'est bien mérité !",
+  "Ha ha ha ! {player} t'as cru ? T'as vraiment cru t'en sortir ? {action} ! Et remercie encore !",
+  "Message de l'univers pour {player} : t'es nul, t'as perdu, tu dois {action}. Bonne journée !",
+  "{player} si t'avais un euro à chaque fois que tu perdes, là tu devrais {action} et t'aurais toujours rien !",
+  "Extraordinaire. Incroyable. Pathétique. {player} tu vas faire {action} et tu vas pas en mourir. Peut-être.",
+  "Chers amis, le bouffon officiel de la soirée est {player}. Son châtiment : {action}. Applaudissez !",
+  "T'inquiète {player} ça va aller... non ça va pas aller. Tu dois {action}. Bonne chance sale gosse !",
 ];
 
 // ─── Speech ──────────────────────────────────────────────
@@ -241,7 +261,7 @@ const touchArea = document.getElementById('touch-area');
 touchArea.addEventListener('touchstart', onTouchStart, { passive: false });
 touchArea.addEventListener('touchend', onTouchEnd, { passive: false });
 touchArea.addEventListener('touchcancel', onTouchEnd, { passive: false });
-touchArea.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+touchArea.addEventListener('touchmove', onTouchMove, { passive: false });
 
 function onTouchStart(e) {
   e.preventDefault();
@@ -263,6 +283,18 @@ function onTouchStart(e) {
       setTimeout(startCountdown, 400);
     } else {
       updateInstruction();
+    }
+  }
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (countdownRunning) return;
+  for (const touch of e.changedTouches) {
+    const circle = document.getElementById(`tc-${touch.identifier}`);
+    if (circle) {
+      circle.style.left = touch.clientX + 'px';
+      circle.style.top = touch.clientY + 'px';
     }
   }
 }
@@ -393,7 +425,7 @@ function revealWinner() {
 
   setTimeout(() => {
     showScreen('screen-reveal');
-    setTimeout(speakReveal, 500);
+    setTimeout(speakReveal, 300);
   }, 600);
 }
 
@@ -425,6 +457,3 @@ document.getElementById('player-name').addEventListener('keydown', e => {
   if (e.key === 'Enter') addPlayer();
 });
 
-document.getElementById('screen-fingers').addEventListener('touchmove', e => {
-  e.preventDefault();
-}, { passive: false });
