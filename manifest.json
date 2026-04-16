@@ -1,0 +1,11 @@
+{
+  "name": "Le Doigt du Destin",
+  "short_name": "Destin",
+  "description": "Le jeu du doigt — un seul perdant, tous les autres regardent.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": []
+}
