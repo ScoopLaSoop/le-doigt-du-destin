@@ -41,6 +41,7 @@
     <div class="screen-header">
       <button class="btn-back" onclick="showScreen('screen-gage')">←</button>
       <h2>Les Joueurs</h2>
+      <span class="player-count-badge" id="player-count-badge"></span>
     </div>
     <div class="screen-content">
       <div class="add-player-form">
@@ -48,6 +49,8 @@
           <img id="preview-avatar" src="" alt="" style="display:none">
           <span id="avatar-placeholder">📷</span>
         </button>
+        <button class="btn-gallery" onclick="openGallery()" title="Choisir depuis la galerie">🖼️</button>
+        <input type="file" id="gallery-input" accept="image/*" style="display:none">
         <input type="text" id="player-name" placeholder="Nom du joueur" maxlength="20" autocomplete="off">
         <button class="btn-add" onclick="addPlayer()">+</button>
       </div>
@@ -96,6 +99,11 @@
       </div>
     </div>
     <canvas id="capture-canvas" style="display:none"></canvas>
+  </div>
+
+  <!-- Anti-triche flash -->
+  <div id="no-cheat-overlay" class="no-cheat-overlay hidden">
+    <div class="no-cheat-text">☝️ Pas de triche !</div>
   </div>
 
   <script src="app.js"></script>

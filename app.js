@@ -10,6 +10,7 @@ let cameraStream = null;
 let touchPlayerMap = new Map(); // touchId → playerIndex
 let placedOrder = [];           // playerIndex[] in order of placement
 let countdownRunning = false;
+let countdownGeneration = 0;
 let winnerIndex = -1;
 let currentRevealText = '';
 
@@ -131,6 +132,40 @@ function openCamera() {
     .catch(() => { pendingPhoto = null; });
 }
 
+function openGallery() {
+  document.getElementById('gallery-input').click();
+}
+
+document.getElementById('gallery-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('capture-canvas');
+      const SIZE = 200;
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      const size = Math.min(img.width, img.height);
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, SIZE, SIZE);
+      pendingPhoto = canvas.toDataURL('image/jpeg', 0.72);
+
+      const preview = document.getElementById('preview-avatar');
+      const placeholder = document.getElementById('avatar-placeholder');
+      preview.src = pendingPhoto;
+      preview.style.display = 'block';
+      placeholder.style.display = 'none';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
 function capturePhoto() {
   const video = document.getElementById('camera-video');
   const canvas = document.getElementById('capture-canvas');
@@ -139,7 +174,6 @@ function capturePhoto() {
   canvas.height = SIZE;
   const ctx = canvas.getContext('2d');
 
-  // Mirror + square crop
   const vw = video.videoWidth;
   const vh = video.videoHeight;
   const size = Math.min(vw, vh);
@@ -172,7 +206,10 @@ function closeCamera() {
 function addPlayer() {
   const input = document.getElementById('player-name');
   const name = input.value.trim();
-  if (!name) { input.focus(); return; }
+  if (!name) {
+    shakeInput(input);
+    return;
+  }
 
   players.push({
     name,
@@ -192,6 +229,23 @@ function addPlayer() {
   input.focus();
 }
 
+function shakeInput(el) {
+  el.style.animation = 'none';
+  void el.offsetHeight;
+  el.style.animation = 'inputShake 0.35s ease';
+  el.style.borderColor = 'var(--accent)';
+  setTimeout(() => {
+    el.style.borderColor = '';
+    el.style.animation = '';
+  }, 500);
+}
+
+function cycleColor(i) {
+  const currentIdx = PLAYER_COLORS.indexOf(players[i].color);
+  players[i].color = PLAYER_COLORS[(currentIdx + 1) % PLAYER_COLORS.length];
+  renderPlayers();
+}
+
 function removePlayer(i) {
   players.splice(i, 1);
   renderPlayers();
@@ -201,6 +255,7 @@ function renderPlayers() {
   const list = document.getElementById('players-list');
   const startBtn = document.getElementById('start-btn');
   const hint = document.getElementById('players-hint');
+  const badge = document.getElementById('player-count-badge');
 
   list.innerHTML = players.map((p, i) => `
     <div class="player-card">
@@ -212,9 +267,69 @@ function renderPlayers() {
     </div>
   `).join('');
 
+  list.querySelectorAll('.player-card').forEach((card, i) => {
+    addSwipeToDelete(card, i);
+    card.querySelector('.player-card-avatar').addEventListener('click', () => cycleColor(i));
+  });
+
   const ready = players.length >= 2;
   startBtn.disabled = !ready;
+
+  if (players.length === 0) hint.textContent = 'Ajoutez au moins 2 joueurs';
+  else if (players.length === 1) hint.textContent = 'Encore 1 joueur minimum';
   hint.style.display = ready ? 'none' : 'block';
+
+  if (badge) badge.textContent = players.length > 0 ? `${players.length} / 8` : '';
+}
+
+function addSwipeToDelete(cardEl, playerIndex) {
+  let startX = 0, startY = 0, tracking = false, moved = false;
+
+  cardEl.addEventListener('touchstart', e => {
+    if (e.target.classList.contains('btn-remove')) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+    moved = false;
+    cardEl.style.transition = '';
+  }, { passive: true });
+
+  cardEl.addEventListener('touchmove', e => {
+    if (!tracking) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+
+    if (!moved && Math.abs(dy) > Math.abs(dx)) {
+      tracking = false;
+      return;
+    }
+
+    if (dx < -8) {
+      moved = true;
+      e.preventDefault();
+      const clamped = Math.max(dx, -(cardEl.offsetWidth + 20));
+      cardEl.style.transform = `translateX(${clamped}px)`;
+      cardEl.style.opacity = String(Math.max(0, 1 + clamped / cardEl.offsetWidth));
+    }
+  }, { passive: false });
+
+  cardEl.addEventListener('touchend', () => {
+    if (!tracking || !moved) { tracking = false; return; }
+    tracking = false;
+    const m = cardEl.style.transform.match(/translateX\((-?[\d.]+)px\)/);
+    const currentX = m ? parseFloat(m[1]) : 0;
+
+    if (currentX < -80) {
+      cardEl.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+      cardEl.style.transform = `translateX(-${cardEl.offsetWidth + 20}px)`;
+      cardEl.style.opacity = '0';
+      setTimeout(() => removePlayer(playerIndex), 220);
+    } else {
+      cardEl.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+      cardEl.style.transform = '';
+      cardEl.style.opacity = '';
+    }
+  });
 }
 
 function escapeHtml(str) {
@@ -222,7 +337,6 @@ function escapeHtml(str) {
 }
 
 function startGame() {
-  // Unlock SpeechSynthesis on user gesture (required on iOS)
   const unlock = new SpeechSynthesisUtterance('');
   synth.speak(unlock);
 
@@ -236,6 +350,7 @@ function resetTouchState() {
   touchPlayerMap = new Map();
   placedOrder = [];
   countdownRunning = false;
+  countdownGeneration++;
   winnerIndex = -1;
   document.getElementById('touch-area').innerHTML = '';
   document.getElementById('countdown-overlay').classList.add('hidden');
@@ -250,7 +365,6 @@ function updateInstruction() {
   document.getElementById('next-player-name').textContent =
     placed < total ? players[placed].name : '';
 
-  // Progress dots
   const progressEl = document.getElementById('fingers-progress');
   progressEl.innerHTML = players.map((_, i) =>
     `<div class="progress-dot${i < placed ? ' done' : ''}"></div>`
@@ -289,7 +403,7 @@ function onTouchStart(e) {
 
 function onTouchMove(e) {
   e.preventDefault();
-  if (countdownRunning) return;
+  // Circles follow the finger even during countdown — feels natural, tricher en levant le doigt reste puni
   for (const touch of e.changedTouches) {
     const circle = document.getElementById(`tc-${touch.identifier}`);
     if (circle) {
@@ -301,10 +415,13 @@ function onTouchMove(e) {
 
 function onTouchEnd(e) {
   e.preventDefault();
-  if (countdownRunning) return;
 
   for (const touch of e.changedTouches) {
     if (touchPlayerMap.has(touch.identifier)) {
+      if (countdownRunning) {
+        showNoCheat();
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      }
       resetTouchState();
       updateInstruction();
       return;
@@ -351,14 +468,20 @@ function createTouchCircle(touch, playerIdx) {
 // ─── Countdown ────────────────────────────────────────────
 function startCountdown() {
   countdownRunning = true;
+  countdownGeneration++;
+  const myGen = countdownGeneration;
+
   const overlay = document.getElementById('countdown-overlay');
   overlay.classList.remove('hidden');
+
+  // Lock animation on all placed circles
+  document.querySelectorAll('.touch-circle').forEach(c => c.classList.add('locked'));
 
   const steps = [3, 2, 1];
   let i = 0;
 
   function tick() {
-    const overlay = document.getElementById('countdown-overlay');
+    if (!countdownRunning || countdownGeneration !== myGen) return;
 
     if (i < steps.length) {
       if (navigator.vibrate) navigator.vibrate(70);
@@ -388,11 +511,12 @@ function setCountdownEl(text, className) {
 
 // ─── Reveal ──────────────────────────────────────────────
 function revealWinner() {
+  if (!countdownRunning) return;
+
   const playerIndices = Array.from(touchPlayerMap.values());
   winnerIndex = playerIndices[Math.floor(Math.random() * playerIndices.length)];
   const winner = players[winnerIndex];
 
-  // Highlight winning circle
   for (const [touchId, pIdx] of touchPlayerMap) {
     const circle = document.getElementById(`tc-${touchId}`);
     if (!circle) continue;
@@ -404,13 +528,11 @@ function revealWinner() {
     }
   }
 
-  // Build reveal text
   const variant = VOICE_VARIANTS[Math.floor(Math.random() * VOICE_VARIANTS.length)];
   currentRevealText = variant
     .replace(/{player}/g, winner.name)
     .replace(/{action}/g, gage);
 
-  // Setup reveal screen
   const avatarEl = document.getElementById('reveal-avatar');
   avatarEl.style.borderColor = winner.color;
   avatarEl.style.boxShadow = `0 0 50px ${winner.color}60`;
@@ -431,6 +553,13 @@ function revealWinner() {
 
 function speakReveal() {
   speak(currentRevealText);
+}
+
+// ─── Anti-triche flash ───────────────────────────────────
+function showNoCheat() {
+  const el = document.getElementById('no-cheat-overlay');
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 900);
 }
 
 // ─── Post-game ───────────────────────────────────────────
@@ -456,4 +585,3 @@ function newGame() {
 document.getElementById('player-name').addEventListener('keydown', e => {
   if (e.key === 'Enter') addPlayer();
 });
-
