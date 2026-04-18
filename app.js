@@ -13,6 +13,7 @@ let countdownRunning = false;
 let countdownGeneration = 0;
 let winnerIndex = -1;
 let currentRevealText = '';
+let wakeLock = null;
 
 // ─── Constants ───────────────────────────────────────────
 const PLAYER_COLORS = [
@@ -92,26 +93,79 @@ function speak(text) {
 }
 
 // ─── Navigation ──────────────────────────────────────────
+let currentScreenId = 'screen-home';
+
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const target = document.getElementById(id);
+  if (!target) return;
+
+  const fromIdx = parseInt(document.getElementById(currentScreenId)?.dataset.screenIndex || '0', 10);
+  const toIdx = parseInt(target.dataset.screenIndex || '0', 10);
+  const goingForward = toIdx >= fromIdx;
+
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active', 'slide-in-right', 'slide-in-left');
+  });
+
+  target.classList.add('active', goingForward ? 'slide-in-right' : 'slide-in-left');
+
+  // Body state flags for CSS perf optimizations
+  document.body.classList.toggle('in-fingers', id === 'screen-fingers');
+  if (id !== 'screen-fingers') document.body.classList.remove('in-countdown');
+
+  currentScreenId = id;
 }
+
+// ─── Swipe-back gesture (iOS-native feeling) ─────────────
+(function initSwipeBack() {
+  let startX = 0, startY = 0, startT = 0, tracking = false;
+  const EDGE_LIMIT = 24;      // px from left edge
+  const MIN_DISTANCE = 80;    // px horizontal
+  const MAX_Y_DRIFT = 70;     // px vertical max
+  const MIN_VELOCITY = 0.25;  // px/ms
+  const BACK_MAP = {
+    'screen-gage': 'screen-home',
+    'screen-players': 'screen-gage',
+  };
+
+  document.addEventListener('touchstart', (e) => {
+    if (!(currentScreenId in BACK_MAP)) return;
+    const t = e.touches[0];
+    if (t.clientX > EDGE_LIMIT) return;
+    startX = t.clientX; startY = t.clientY; startT = Date.now(); tracking = true;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = Math.abs(t.clientY - startY);
+    const dt = Math.max(1, Date.now() - startT);
+    if (dx >= MIN_DISTANCE && dy <= MAX_Y_DRIFT && (dx / dt) >= MIN_VELOCITY) {
+      const dest = BACK_MAP[currentScreenId];
+      if (dest) showScreen(dest);
+    }
+  }, { passive: true });
+})();
 
 // ─── Gage Screen ─────────────────────────────────────────
 const gageInput = document.getElementById('gage-input');
 const charCountEl = document.getElementById('char-count');
 
 gageInput.addEventListener('input', () => {
-  charCountEl.textContent = gageInput.value.length;
+  const len = gageInput.value.length;
+  charCountEl.textContent = len;
+  charCountEl.parentElement.classList.toggle('warn', len >= 180);
 });
 
 function validateGage() {
   gage = gageInput.value.trim();
   if (!gage) {
     gageInput.focus();
-    gageInput.style.borderColor = 'var(--accent)';
-    gageInput.style.animation = 'none';
-    setTimeout(() => { gageInput.style.borderColor = ''; }, 1200);
+    gageInput.classList.add('shake');
+    if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
+    setTimeout(() => gageInput.classList.remove('shake'), 500);
     return;
   }
   showScreen('screen-players');
@@ -208,6 +262,7 @@ function addPlayer() {
   const name = input.value.trim();
   if (!name) {
     shakeInput(input);
+    if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
     return;
   }
 
@@ -224,6 +279,12 @@ function addPlayer() {
   preview.src = '';
   preview.style.display = 'none';
   placeholder.style.display = 'block';
+
+  // Morph FAB "+" → ✓ then reset
+  const btnAdd = document.getElementById('btn-add');
+  btnAdd.classList.add('added');
+  setTimeout(() => btnAdd.classList.remove('added'), 600);
+  if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
 
   renderPlayers();
   input.focus();
@@ -258,12 +319,12 @@ function renderPlayers() {
   const badge = document.getElementById('player-count-badge');
 
   list.innerHTML = players.map((p, i) => `
-    <div class="player-card">
-      <div class="player-card-avatar" style="border-color:${p.color};color:${p.color}">
+    <div class="player-card" style="--card-accent:${p.color}66">
+      <div class="player-card-avatar" style="border-color:${p.color};color:${p.color};--card-accent:${p.color}80">
         ${p.photo ? `<img src="${p.photo}" alt="">` : p.name.charAt(0).toUpperCase()}
       </div>
       <span class="player-card-name">${escapeHtml(p.name)}</span>
-      <button class="btn-remove" onclick="removePlayer(${i})">✕</button>
+      <button class="btn-remove" onclick="removePlayer(${i})" aria-label="Retirer">✕</button>
     </div>
   `).join('');
 
@@ -275,11 +336,15 @@ function renderPlayers() {
   const ready = players.length >= 2;
   startBtn.disabled = !ready;
 
-  if (players.length === 0) hint.textContent = 'Ajoutez au moins 2 joueurs';
-  else if (players.length === 1) hint.textContent = 'Encore 1 joueur minimum';
-  hint.style.display = ready ? 'none' : 'block';
+  if (badge) {
+    badge.textContent = players.length > 0 ? `${players.length}` : '';
+    badge.classList.toggle('ready', ready);
+  }
 
-  if (badge) badge.textContent = players.length > 0 ? `${players.length} / 8` : '';
+  if (!players.length) hint.textContent = 'Ajoutez au moins 2 joueurs';
+  else if (players.length === 1) hint.textContent = 'Encore 1 joueur…';
+  else hint.textContent = 'Prêt à jouer';
+  hint.style.display = ready ? 'none' : 'block';
 }
 
 function addSwipeToDelete(cardEl, playerIndex) {
@@ -352,8 +417,13 @@ function resetTouchState() {
   countdownRunning = false;
   countdownGeneration++;
   winnerIndex = -1;
+  releaseWakeLock();
+  document.body.classList.remove('bright-mode', 'in-countdown');
   document.getElementById('touch-area').innerHTML = '';
   document.getElementById('countdown-overlay').classList.add('hidden');
+  const instr = document.getElementById('fingers-instruction');
+  instr.classList.remove('hiding');
+  instr.style.display = 'flex';
 }
 
 function updateInstruction() {
@@ -390,10 +460,12 @@ function onTouchStart(e) {
     placedOrder.push(playerIdx);
 
     createTouchCircle(touch, playerIdx);
-    if (navigator.vibrate) navigator.vibrate(25);
+    if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
 
     if (placedOrder.length === players.length) {
-      document.getElementById('fingers-instruction').style.display = 'none';
+      const instr = document.getElementById('fingers-instruction');
+      instr.classList.add('hiding');
+      setTimeout(() => { instr.style.display = 'none'; }, 320);
       setTimeout(startCountdown, 400);
     } else {
       updateInstruction();
@@ -441,6 +513,7 @@ function createTouchCircle(touch, playerIdx) {
   inner.className = 'touch-circle-inner';
   inner.style.borderColor = p.color;
   inner.style.background = p.color + '22';
+  el.style.setProperty('--circle-glow', p.color + '99');
 
   if (p.photo) {
     const img = document.createElement('img');
@@ -466,11 +539,30 @@ function createTouchCircle(touch, playerIdx) {
 }
 
 // ─── Countdown ────────────────────────────────────────────
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch { /* user gesture missing or unsupported — silent fallback */ }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && countdownRunning && !wakeLock) {
+    requestWakeLock();
+  }
+});
+
 function startCountdown() {
   countdownRunning = true;
   countdownGeneration++;
   const myGen = countdownGeneration;
-
+  requestWakeLock();
+  document.body.classList.add('bright-mode', 'in-countdown');
   const overlay = document.getElementById('countdown-overlay');
   overlay.classList.remove('hidden');
 
@@ -478,18 +570,18 @@ function startCountdown() {
   document.querySelectorAll('.touch-circle').forEach(c => c.classList.add('locked'));
 
   const steps = [3, 2, 1];
+  const tickVibration = [80, 60, 40]; // tension rises (shorter = more urgent)
   let i = 0;
 
   function tick() {
     if (!countdownRunning || countdownGeneration !== myGen) return;
-
     if (i < steps.length) {
-      if (navigator.vibrate) navigator.vibrate(70);
+      if (navigator.vibrate) navigator.vibrate(tickVibration[i]);
       setCountdownEl(steps[i].toString(), 'countdown-number');
       i++;
       setTimeout(tick, 950);
     } else {
-      if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 180]);
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 180, 40, 80]);
       setCountdownEl("C'EST\nTOI !", 'countdown-go');
       setTimeout(revealWinner, 1100);
     }
@@ -512,7 +604,8 @@ function setCountdownEl(text, className) {
 // ─── Reveal ──────────────────────────────────────────────
 function revealWinner() {
   if (!countdownRunning) return;
-
+  releaseWakeLock();
+  document.body.classList.remove('bright-mode', 'in-countdown');
   const playerIndices = Array.from(touchPlayerMap.values());
   winnerIndex = playerIndices[Math.floor(Math.random() * playerIndices.length)];
   const winner = players[winnerIndex];
@@ -533,9 +626,10 @@ function revealWinner() {
     .replace(/{player}/g, winner.name)
     .replace(/{action}/g, gage);
 
+  // Setup reveal screen — override --accent CSS var so pulseGlow takes the winner's color
   const avatarEl = document.getElementById('reveal-avatar');
+  avatarEl.style.setProperty('--accent', winner.color);
   avatarEl.style.borderColor = winner.color;
-  avatarEl.style.boxShadow = `0 0 50px ${winner.color}60`;
   avatarEl.style.color = winner.color;
   avatarEl.innerHTML = winner.photo
     ? `<img src="${winner.photo}" alt="">`

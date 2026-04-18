@@ -8,62 +8,66 @@
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#070710">
 </head>
 <body>
 
   <!-- Screen 1: Accueil -->
-  <div id="screen-home" class="screen active">
+  <div id="screen-home" class="screen active" data-screen-index="1">
     <div class="screen-content center">
-      <div class="logo">☠️</div>
+      <div class="logo" aria-hidden="true"></div>
       <h1 class="game-title">Le Doigt<br>du Destin</h1>
       <p class="subtitle">Un seul perdant.<br>Tous les autres regardent.</p>
-      <button class="btn btn-primary" onclick="showScreen('screen-gage')">Nouveau Jeu</button>
+      <button class="btn btn-primary" onclick="showScreen('screen-gage')">Nouveau Jeu  →</button>
     </div>
   </div>
 
   <!-- Screen 2: Le Gage -->
-  <div id="screen-gage" class="screen">
+  <div id="screen-gage" class="screen" data-screen-index="2">
     <div class="screen-header">
-      <button class="btn-back" onclick="showScreen('screen-home')">←</button>
+      <button class="btn-back" onclick="showScreen('screen-home')" aria-label="Retour">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
       <h2>Le Gage</h2>
     </div>
     <div class="screen-content">
       <p class="label">Quel est le gage du perdant ?</p>
       <textarea id="gage-input" placeholder="Ex: faire 20 pompes, appeler son ex, chanter devant tout le monde..." maxlength="200"></textarea>
       <div class="char-count"><span id="char-count">0</span>/200</div>
-      <button class="btn btn-primary" onclick="validateGage()">Suivant →</button>
+      <button class="btn btn-primary" onclick="validateGage()">Suivant  →</button>
     </div>
   </div>
 
   <!-- Screen 3: Joueurs -->
-  <div id="screen-players" class="screen">
+  <div id="screen-players" class="screen" data-screen-index="3">
     <div class="screen-header">
-      <button class="btn-back" onclick="showScreen('screen-gage')">←</button>
+      <button class="btn-back" onclick="showScreen('screen-gage')" aria-label="Retour">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
       <h2>Les Joueurs</h2>
-      <span class="player-count-badge" id="player-count-badge"></span>
+      <span class="nav-counter player-count-badge" id="player-count-badge"></span>
     </div>
     <div class="screen-content">
       <div class="add-player-form">
-        <button class="avatar-btn" id="avatar-btn" onclick="openCamera()">
+        <button class="avatar-btn" id="avatar-btn" onclick="openCamera()" aria-label="Ajouter une photo (optionnel)">
           <img id="preview-avatar" src="" alt="" style="display:none">
           <span id="avatar-placeholder">📷</span>
         </button>
         <button class="btn-gallery" onclick="openGallery()" title="Choisir depuis la galerie">🖼️</button>
         <input type="file" id="gallery-input" accept="image/*" style="display:none">
         <input type="text" id="player-name" placeholder="Nom du joueur" maxlength="20" autocomplete="off">
-        <button class="btn-add" onclick="addPlayer()">+</button>
+        <button class="btn-add" id="btn-add" onclick="addPlayer()" aria-label="Ajouter">+</button>
       </div>
       <div id="players-list" class="players-list"></div>
       <div class="bottom-actions">
         <p class="hint" id="players-hint">Ajoutez au moins 2 joueurs</p>
-        <button class="btn btn-primary" id="start-btn" onclick="startGame()" disabled>C'est parti ! 🎲</button>
+        <button class="btn btn-primary" id="start-btn" onclick="startGame()" disabled>C'est parti !  🎲</button>
       </div>
     </div>
   </div>
 
   <!-- Screen 4: Doigts -->
-  <div id="screen-fingers" class="screen fingers-screen">
+  <div id="screen-fingers" class="screen fingers-screen" data-screen-index="4">
     <div id="fingers-instruction" class="fingers-instruction">
       <span id="next-player-name" class="next-name"></span>
       <span class="instruction-sub">pose ton doigt sur l'écran</span>
@@ -76,15 +80,15 @@
   </div>
 
   <!-- Screen 5: Révélation -->
-  <div id="screen-reveal" class="screen reveal-screen">
+  <div id="screen-reveal" class="screen reveal-screen" data-screen-index="5">
     <div class="reveal-content">
       <div id="reveal-avatar" class="reveal-avatar"></div>
       <div id="reveal-name" class="reveal-name"></div>
       <div id="reveal-gage" class="reveal-gage"></div>
-      <button class="btn-icon" onclick="speakReveal()">🔊 Écouter</button>
+      <button class="btn-icon" onclick="speakReveal()">🔊  Écouter</button>
       <div class="reveal-actions">
-        <button class="btn btn-secondary" onclick="replayGame()">Rejouer</button>
-        <button class="btn btn-primary" onclick="newGame()">Nouvelle partie</button>
+        <button class="btn btn-secondary" onclick="replayGame()">Même gage</button>
+        <button class="btn btn-primary" onclick="newGame()">Recommencer</button>
       </div>
     </div>
   </div>
@@ -94,8 +98,8 @@
     <div class="modal-content">
       <video id="camera-video" autoplay playsinline muted></video>
       <div class="camera-controls">
-        <button class="btn btn-secondary" style="width:auto;padding:14px 24px" onclick="closeCamera()">Annuler</button>
-        <button class="btn-capture" onclick="capturePhoto()">📸</button>
+        <button class="btn btn-secondary" onclick="closeCamera()">Annuler</button>
+        <button class="btn-capture" onclick="capturePhoto()" aria-label="Prendre la photo">📸</button>
       </div>
     </div>
     <canvas id="capture-canvas" style="display:none"></canvas>
